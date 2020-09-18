@@ -1216,6 +1216,7 @@ class MiniGridEnv(gym.Env):
             'mission': self.mission
         }
 
+        obs = tuple(list(self.agent_pos) + [self.agent_dir])
         return obs
 
     def get_obs_render(self, obs, tile_size=TILE_PIXELS//2):
