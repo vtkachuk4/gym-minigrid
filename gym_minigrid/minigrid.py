@@ -632,15 +632,16 @@ class MiniGridEnv(gym.Env):
         right = 1
         forward = 2
 
+        # The following actions were commented since they were not needed
         # Pick up an object
-        pickup = 3
+        # pickup = 3
         # Drop an object
-        drop = 4
+        # drop = 4
         # Toggle/activate an object
-        toggle = 5
+        # toggle = 5
 
         # Done completing task
-        done = 6
+        # done = 6
 
     def __init__(
         self,
@@ -821,7 +822,8 @@ class MiniGridEnv(gym.Env):
         Compute the reward to be given upon success
         """
 
-        return 1 - 0.9 * (self.step_count / self.max_steps)
+        # return 1 - 0.9 * (self.step_count / self.max_steps)
+        return 1
 
     def _rand_int(self, low, high):
         """
@@ -1128,29 +1130,32 @@ class MiniGridEnv(gym.Env):
             if fwd_cell != None and fwd_cell.type == 'lava':
                 done = True
 
-        # Pick up an object
-        elif action == self.actions.pickup:
-            if fwd_cell and fwd_cell.can_pickup():
-                if self.carrying is None:
-                    self.carrying = fwd_cell
-                    self.carrying.cur_pos = np.array([-1, -1])
-                    self.grid.set(*fwd_pos, None)
+        # The following commented actions were not needed
+            '''
+            # Pick up an object
+            elif action == self.actions.pickup:
+                if fwd_cell and fwd_cell.can_pickup():
+                    if self.carrying is None:
+                        self.carrying = fwd_cell
+                        self.carrying.cur_pos = np.array([-1, -1])
+                        self.grid.set(*fwd_pos, None)
 
-        # Drop an object
-        elif action == self.actions.drop:
-            if not fwd_cell and self.carrying:
-                self.grid.set(*fwd_pos, self.carrying)
-                self.carrying.cur_pos = fwd_pos
-                self.carrying = None
+            # Drop an object
+            elif action == self.actions.drop:
+                if not fwd_cell and self.carrying:
+                    self.grid.set(*fwd_pos, self.carrying)
+                    self.carrying.cur_pos = fwd_pos
+                    self.carrying = None
 
-        # Toggle/activate an object
-        elif action == self.actions.toggle:
-            if fwd_cell:
-                fwd_cell.toggle(self, fwd_pos)
+            # Toggle/activate an object
+            elif action == self.actions.toggle:
+                if fwd_cell:
+                    fwd_cell.toggle(self, fwd_pos)
 
-        # Done action (not used by default)
-        elif action == self.actions.done:
-            pass
+            # Done action (not used by default)
+            elif action == self.actions.done:
+                pass
+            '''
 
         else:
             assert False, "unknown action"

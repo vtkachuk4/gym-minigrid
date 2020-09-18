@@ -8,7 +8,7 @@ from IPython.display import clear_output
 import gym_minigrid
 
 
-def test_cur_policy(q_table, step_reward, test_eps=500):
+def test_cur_policy(q_table, test_eps=100):
     avg_reward_all_episodes = 0
     for eps in range(test_eps):
         state = env.reset()
@@ -17,16 +17,9 @@ def test_cur_policy(q_table, step_reward, test_eps=500):
         rewards_current_episode = 0
 
         for step in range(max_steps_per_episode):
-            action = np.argmax(q_table[state, :])
+            action = q_table.columns[q_table.loc[state].argmax()]
 
             new_state, reward, done, info = env.step(action)
-
-            if step_reward is not None:
-                if reward == 0:
-                    reward = step_reward
-                if new_state in [5, 7, 11, 12]:
-                    reward = step_reward * 100
-
             state = new_state
             rewards_current_episode += reward
 
@@ -37,11 +30,10 @@ def test_cur_policy(q_table, step_reward, test_eps=500):
     return avg_reward_all_episodes
 
 
-def teach_lvl_one(target_policy):
-    q_table = np.zeros((state_space_size, action_space_size))
-    _epsilon = 0.1
+def teach(q_table, target_policy, theta):
+    theta = 0.1
     for s, a in target_policy:
-        q_table[s, a] = np.max(q_table[s, :]) + _epsilon
+        q_table[s, a] = np.max(q_table[s, :]) + theta
     return q_table
 
 
@@ -65,30 +57,37 @@ def print_optimal_policy(q_table, terminal_states=[5, 7, 11, 12, 15],
     print(np.array(optimal_policy))
 
 
+def sketchy_q_learning():
+    env.reset()
+    for episode in range(5):
+        print(f'we are on episode: {episode}')
+        env.step(env.action_space.sample())
+
+
 # Q-learning algorithm
 def q_learning(q_table, num_episodes, max_steps_per_episode, learning_rate,
-               discount_rate, step_reward=None):
+               discount_rate, test_policy=True):
     rewards_all_episodes = []
     test_reward_per_thousand_episodes = []
     policy_changes = 0
-    new_policy = get_optimal_policy(q_table)
-    print(new_policy)
+    # new_policy = get_optimal_policy(q_table)
+    # print(new_policy)
 
     for episode in range(num_episodes):
-        # if episode % ep_chunk == 0:
-        #     test_reward_per_thousand_episodes.append(
-        #         test_cur_policy(q_table, step_reward=step_reward))
+        # print(f'we are on episode: {episode}')
+        if test_policy:
+            if episode % ep_chunk == 0:
+                test_reward_per_thousand_episodes.append(
+                    test_cur_policy(q_table))
 
         state = env.reset()
 
         done = False
         rewards_current_episode = 0
-        # if episode == 19000:
-        # exploration_rate = 0
 
         for step in range(max_steps_per_episode):
             # env.render()
-            old_policy = new_policy
+            # old_policy = new_policy
 
             # Exploration and Exploitation
             exploration_rate_threshold = random.uniform(0, 1)
@@ -98,11 +97,6 @@ def q_learning(q_table, num_episodes, max_steps_per_episode, learning_rate,
                 action = env.action_space.sample()
 
             new_state, reward, done, info = env.step(action)
-            # if step_reward is not None:
-            #     if reward == 0:
-            #         reward = step_reward
-            #     if new_state in [5, 7, 11, 12]:
-            #         reward = step_reward * 100
 
             # update Q-table
             q_table[action].loc[state] = q_table[action].loc[state] * (
@@ -110,7 +104,7 @@ def q_learning(q_table, num_episodes, max_steps_per_episode, learning_rate,
                                                  reward + discount_rate *
                                                  q_table.loc[new_state].max())
 
-            new_policy = get_optimal_policy(q_table)
+            # new_policy = get_optimal_policy(q_table)
             # if new_policy != old_policy:
             #     policy_changes += 1
 
@@ -120,27 +114,28 @@ def q_learning(q_table, num_episodes, max_steps_per_episode, learning_rate,
             if done == True:
                 break
 
-        # Eploration rate decay
-        # exploration_rate = min_exploration_rate + \
-        #  (max_exploration_rate - min_exploration_rate) * np.exp(-exploration_decay_rate * episode)
-
         rewards_all_episodes.append(rewards_current_episode)
+        if episode % ep_chunk == 0 and episode != 0:
+            avg_rew = sum(rewards_all_episodes[episode - ep_chunk:episode]) / \
+                      ep_chunk
+            print(f'Episode: {episode}, avg reward for last {ep_chunk} '
+                  f'episodes: {avg_rew}')
 
     reward_per_thousand_episodes = np.split(np.array(rewards_all_episodes),
                                             num_episodes / ep_chunk)
     reward_per_thousand_episodes = [sum(r / ep_chunk) for r in
                                     reward_per_thousand_episodes]
 
-    count = ep_chunk
-    print("******Average Reward Per Thousand Episodes*****\n")
-    for r in reward_per_thousand_episodes:
-        print(count, ": ", r)
-        count += ep_chunk
+    # count = ep_chunk
+    # print("******Average Reward Per Thousand Episodes*****\n")
+    # for r in reward_per_thousand_episodes:
+    #     print(count, ": ", r)
+    #     count += ep_chunk
 
-    count = ep_chunk
-    for r in test_reward_per_thousand_episodes:
-        print("test ", count, ": ", r)
-        count += ep_chunk
+    # count = ep_chunk
+    # for r in test_reward_per_thousand_episodes:
+    #     print("test ", count, ": ", r)
+    #     count += ep_chunk
     return test_reward_per_thousand_episodes, reward_per_thousand_episodes, \
            policy_changes
 
@@ -154,6 +149,7 @@ def plot_reward_progress(x_axis, y_axis_1, y_axis_2=None):
         axes[1].plot(x_axis, y_axis_2)
         axes[1].set(xlabel='episodes', ylabel='Avg Total Reward')
     fig.tight_layout()
+    plt.show()
 
 
 def plot_reward_progress_overlay(x_axis, y_axis_1_1, y_axis_2_1, y_axis_1_2,
@@ -185,22 +181,38 @@ def init_q_table(height, width, num_orientations, num_actions):
     return q_table
 
 
+def visualize_agent(q_table, num_episodes=2):
+    for episode in range(num_episodes):
+        state = env.reset()
+
+        for step in range(max_steps_per_episode):
+            env.render()
+
+            action = q_table.columns[q_table_z.loc[state].argmax()]
+            new_state, reward, done, info = env.step(action)
+            print(reward)
+
+            if done:
+                env.render()
+                if reward == 1:
+                    print("*****You've reached your goal!*****")
+                    time.sleep(1)
+                else:
+                    print("*****You fell through a hole!*****")
+                    time.sleep(1)
+                clear_output(wait=True)
+                break
+            state = new_state
+
+
 if __name__ == '__main__':
-    env = gym.make('MiniGrid-Empty-5x5-v0')
+    env = gym.make('MiniGrid-Empty-6x6-v0')
 
     num_actions = env.action_space.n
     a = env.action_space
     num_orientations = 4
     q_table = init_q_table(env.height, env.width, num_orientations, num_actions)
     print(q_table)
-
-    # observation = env.reset()
-    # for i in range(100):
-    #     env.render()
-    #     print(observation)
-    #     observation, reward, done, info = env.step(env.action_space.sample())
-    #     if done:
-    #         break
 
     target_policy = [(0, 0), (1, 3), (2, 3), (3, 3),
                      (4, 0), (5, 0), (6, 0), (7, 0),
@@ -210,8 +222,8 @@ if __name__ == '__main__':
     # q_table = teach_lvl_one(target_policy)
     # print_optimal_policy(q_table)
 
-    num_episodes = 5
-    ep_chunk = 5
+    num_episodes = 50
+    ep_chunk = 10
     max_steps_per_episode = 100
 
     learning_rate = 0.1
@@ -228,86 +240,29 @@ if __name__ == '__main__':
                                                               learning_rate,
                                                               discount_rate)
     # print_optimal_policy(q_table_z)
-    print('policy changes: ', policy_changes)
-    print(q_table_z)
+    # print(get_optimal_policy(q_table_z))
+    # print('policy changes: ', policy_changes)
+    # print(q_table_z)
 
-    if False:
-        print('Teaching 2nd Q-learner')
-        q_table_t = teach_lvl_one(target_policy)
-        t_rew_all_ep_t, rew_all_ep_t, policy_changes = q_learning(q_table_t,
-                                                                  num_episodes,
-                                                                  max_steps_per_episode,
-                                                                  learning_rate,
-                                                                  discount_rate)
-        print_optimal_policy(q_table_t)
-        print('policy changes: ', policy_changes)
-        print(q_table_t)
+    # print('Teaching 2nd Q-learner')
+    # q_table_t = teach(target_policy)
+    # t_rew_all_ep_t, rew_all_ep_t, policy_changes = q_learning(q_table_t,
+    #                                                           num_episodes,
+    #                                                           max_steps_per_episode,
+    #                                                           learning_rate,
+    #                                                           discount_rate)
+    # print(get_optimal_policy(q_table_t))
+    # print('policy changes: ', policy_changes)
+    # print(q_table_t)
 
-        print('Teaching 3rd Q-learner')
-        q_table_rz = np.zeros((state_space_size, action_space_size))
-        t_rews_all_ep_rz, rews_all_ep_rz, policy_changes = q_learning(
-            q_table_rz,
-            num_episodes,
-            max_steps_per_episode,
-            learning_rate,
-            discount_rate,
-            step_reward=-0.1)
-        print_optimal_policy(q_table_rz)
-        print('policy changes: ', policy_changes)
-        print(q_table_rz)
-
-        print('Teaching 4th Q-learner')
-        q_table_rt = teach_lvl_one(target_policy)
-        t_rews_all_ep_rt, rews_all_ep_rt, policy_changes = q_learning(
-            q_table_rt,
-            num_episodes,
-            max_steps_per_episode,
-            learning_rate,
-            discount_rate,
-            step_reward=-0.1)
-        print_optimal_policy(q_table_rt)
-        print('policy changes: ', policy_changes)
-        print(q_table_rt)
-
-    print('############Plotting#################3')
+    print('############Plotting#################')
     x_axis = np.linspace(ep_chunk, num_episodes, int(num_episodes / ep_chunk))
 
-    plot_reward_progress(x_axis, rew_all_ep_z)
-    # plot_reward_progress(x_axis, rew_all_ep_z, t_rew_all_ep_z)
+    plot_reward_progress(x_axis, rew_all_ep_z, t_rew_all_ep_z)
     # plot_reward_progress(x_axis, rew_all_ep_t, t_rew_all_ep_t)
     # plot_reward_progress_overlay(x_axis, rew_all_ep_z, t_rew_all_ep_z,
     #                              rew_all_ep_t, t_rew_all_ep_t)
-    # plot_reward_progress(x_axis, rews_all_ep_rz, t_rews_all_ep_rz)
-    # plot_reward_progress(x_axis, rews_all_ep_rt, t_rews_all_ep_rt)
-    # plot_reward_progress_overlay(x_axis, rews_all_ep_rz, t_rews_all_ep_rz,
-    #                              rews_all_ep_rt, t_rews_all_ep_rt)
 
-    for episode in range(3):
-        state = env.reset()
-        # print(state)
-        done = False
-        print("*****Episode ", episode + 1, "*****\n\n\n\n")
-        time.sleep(1)
-
-        for step in range(max_steps_per_episode):
-            clear_output(wait=True)
-            env.render()
-            time.sleep(0.3)
-
-            action = q_table.columns[q_table_z.loc[state].argmax()]
-            new_state, reward, done, info = env.step(action)
-
-            if done:
-                clear_output(wait=True)
-                env.render()
-                if reward == 1:
-                    print("*****You've reached your goal!*****")
-                    time.sleep(3)
-                else:
-                    print("*****You fell through a hole!*****")
-                    time.sleep(3)
-                clear_output(wait=True)
-                break
-            state = new_state
+    # visualize_agent(q_table_z, num_episodes=2)
 
     env.close()
