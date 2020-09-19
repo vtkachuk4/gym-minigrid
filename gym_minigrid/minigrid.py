@@ -627,10 +627,14 @@ class MiniGridEnv(gym.Env):
 
     # Enumeration of possible actions
     class Actions(IntEnum):
+        right = 0
+        down = 1
+        left = 2
+        up = 3
         # Turn left, turn right, move forward
-        left = 0
-        right = 1
-        forward = 2
+        # left = 0
+        # right = 1
+        # forward = 2
 
         # The following actions were commented since they were not needed
         # Pick up an object
@@ -1104,24 +1108,15 @@ class MiniGridEnv(gym.Env):
         reward = 0
         done = False
 
-        # Get the position in front of the agent
-        fwd_pos = self.front_pos
+        if action >= 0 and action < 4:
+            self.agent_dir = action
 
-        # Get the contents of the cell in front of the agent
-        fwd_cell = self.grid.get(*fwd_pos)
+            # Get the position in front of the agent
+            fwd_pos = self.front_pos
 
-        # Rotate left
-        if action == self.actions.left:
-            self.agent_dir -= 1
-            if self.agent_dir < 0:
-                self.agent_dir += 4
+            # Get the contents of the cell in front of the agent
+            fwd_cell = self.grid.get(*fwd_pos)
 
-        # Rotate right
-        elif action == self.actions.right:
-            self.agent_dir = (self.agent_dir + 1) % 4
-
-        # Move forward
-        elif action == self.actions.forward:
             if fwd_cell == None or fwd_cell.can_overlap():
                 self.agent_pos = fwd_pos
             if fwd_cell != None and fwd_cell.type == 'goal':
@@ -1132,6 +1127,26 @@ class MiniGridEnv(gym.Env):
 
         # The following commented actions were not needed
             '''
+            # Rotate left
+            if action == self.actions.left:
+                self.agent_dir -= 1
+                if self.agent_dir < 0:
+                    self.agent_dir += 4
+
+            # Rotate right
+            elif action == self.actions.right:
+                self.agent_dir = (self.agent_dir + 1) % 4
+
+            # Move forward
+            elif action == self.actions.forward:
+                if fwd_cell == None or fwd_cell.can_overlap():
+                    self.agent_pos = fwd_pos
+                if fwd_cell != None and fwd_cell.type == 'goal':
+                    done = True
+                    reward = self._reward()
+                if fwd_cell != None and fwd_cell.type == 'lava':
+                    done = True
+
             # Pick up an object
             elif action == self.actions.pickup:
                 if fwd_cell and fwd_cell.can_pickup():
@@ -1221,7 +1236,7 @@ class MiniGridEnv(gym.Env):
             'mission': self.mission
         }
 
-        obs = tuple(list(self.agent_pos) + [self.agent_dir])
+        obs = tuple(self.agent_pos)
         return obs
 
     def get_obs_render(self, obs, tile_size=TILE_PIXELS//2):
