@@ -11,6 +11,8 @@ class EmptyEnv(MiniGridEnv):
         size=8,
         agent_start_pos=(1,1),
         agent_start_dir=0,
+        step_reward=0,
+        final_reward=1
     ):
         self.agent_start_pos = agent_start_pos
         self.agent_start_dir = agent_start_dir
@@ -19,7 +21,9 @@ class EmptyEnv(MiniGridEnv):
             grid_size=size,
             max_steps=4*size*size,
             # Set this to True for maximum speed
-            see_through_walls=True
+            see_through_walls=True,
+            step_reward=step_reward,
+            final_reward=final_reward
         )
 
     def _gen_grid(self, width, height):
@@ -43,7 +47,7 @@ class EmptyEnv(MiniGridEnv):
 
 class EmptyEnv5x5(EmptyEnv):
     def __init__(self, **kwargs):
-        super().__init__(size=5, **kwargs)
+        super().__init__(size=7, **kwargs)
 
 class EmptyRandomEnv5x5(EmptyEnv):
     def __init__(self):
@@ -60,6 +64,32 @@ class EmptyRandomEnv6x6(EmptyEnv):
 class EmptyEnv16x16(EmptyEnv):
     def __init__(self, **kwargs):
         super().__init__(size=16, **kwargs)
+
+
+
+class EmptyEnv5x5R01(EmptyEnv):
+    def __init__(self, **kwargs):
+        super().__init__(size=7, step_reward=0, final_reward=1, **kwargs)
+
+class EmptyEnv5x5Rn10(EmptyEnv):
+    def __init__(self, **kwargs):
+        super().__init__(size=7, step_reward=-1, final_reward=0, **kwargs)
+
+class EmptyEnv10x10R01(EmptyEnv):
+    def __init__(self, **kwargs):
+        super().__init__(size=12, step_reward=0, final_reward=1, **kwargs)
+
+class EmptyEnv10x10Rn10(EmptyEnv):
+    def __init__(self, **kwargs):
+        super().__init__(size=12, step_reward=-1, final_reward=0, **kwargs)
+
+class EmptyEnv20x20R01(EmptyEnv):
+    def __init__(self, **kwargs):
+        super().__init__(size=22, step_reward=0, final_reward=1, **kwargs)
+
+class EmptyEnv20x20Rn10(EmptyEnv):
+    def __init__(self, **kwargs):
+        super().__init__(size=22, step_reward=-1, final_reward=0, **kwargs)
 
 register(
     id='MiniGrid-Empty-5x5-v0',
@@ -90,3 +120,35 @@ register(
     id='MiniGrid-Empty-16x16-v0',
     entry_point='gym_minigrid.envs:EmptyEnv16x16'
 )
+
+
+register(
+    id='MiniGrid-Empty-Reward-0-1-5x5-v0',
+    entry_point='gym_minigrid.envs:EmptyEnv5x5R01'
+)
+
+register(
+    id='MiniGrid-Empty-Reward--1-0-5x5-v0',
+    entry_point='gym_minigrid.envs:EmptyEnv5x5Rn10'
+)
+
+register(
+    id='MiniGrid-Empty-Reward-0-1-10x10-v0',
+    entry_point='gym_minigrid.envs:EmptyEnv10x10R01'
+)
+
+register(
+    id='MiniGrid-Empty-Reward--1-0-10x10-v0',
+    entry_point='gym_minigrid.envs:EmptyEnv10x10Rn10'
+)
+
+register(
+    id='MiniGrid-Empty-Reward-0-1-20x20-v0',
+    entry_point='gym_minigrid.envs:EmptyEnv20x20R01'
+)
+
+register(
+    id='MiniGrid-Empty-Reward--1-0-20x20-v0',
+    entry_point='gym_minigrid.envs:EmptyEnv20x20Rn10'
+)
+#

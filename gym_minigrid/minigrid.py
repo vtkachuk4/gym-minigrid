@@ -655,7 +655,9 @@ class MiniGridEnv(gym.Env):
         max_steps=100,
         see_through_walls=False,
         seed=1337,
-        agent_view_size=7
+        agent_view_size=7,
+        step_reward=0,
+        final_reward=1
     ):
         # Can't set both grid_size and width/height
         if grid_size:
@@ -688,6 +690,9 @@ class MiniGridEnv(gym.Env):
 
         # Range of possible rewards
         self.reward_range = (0, 1)
+
+        self.step_reward = step_reward
+        self.final_reward = final_reward
 
         # Window to use for human rendering mode
         self.window = None
@@ -827,7 +832,7 @@ class MiniGridEnv(gym.Env):
         """
 
         # return 1 - 0.9 * (self.step_count / self.max_steps)
-        return 1
+        return self.final_reward
 
     def _rand_int(self, low, high):
         """
@@ -1105,7 +1110,7 @@ class MiniGridEnv(gym.Env):
     def step(self, action):
         self.step_count += 1
 
-        reward = 0
+        reward = self.step_reward
         done = False
 
         if action >= 0 and action < 4:
@@ -1143,7 +1148,7 @@ class MiniGridEnv(gym.Env):
                     self.agent_pos = fwd_pos
                 if fwd_cell != None and fwd_cell.type == 'goal':
                     done = True
-                    reward = self._reward()
+                    reward = ._reward()
                 if fwd_cell != None and fwd_cell.type == 'lava':
                     done = True
 
@@ -1175,8 +1180,8 @@ class MiniGridEnv(gym.Env):
         else:
             assert False, "unknown action"
 
-        if self.step_count >= self.max_steps:
-            done = True
+        # if self.step_count >= self.max_steps:
+        #     done = True
 
         obs = self.gen_obs()
 
