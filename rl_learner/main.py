@@ -340,7 +340,7 @@ if __name__ == '__main__':
                                   num_actions, random=False)
     print(q_table_init_z)
     q_table_init_r = init_q_table(actual_grid_height, actual_grid_width,
-                                  num_actions, random=True, min=-1, max=2,
+                                  num_actions, random=True, min=-11, max=-10,
                                   terminal_states=terminal_states)
     print(q_table_init_r)
     policy_init = get_optimal_policy(q_table_init_r, terminal_states)
@@ -351,14 +351,15 @@ if __name__ == '__main__':
                                          actual_grid_width, goal_state)
     pretty_print_policy(teaching_policy)
 
-    ep_chunk = 5
+
+    ep_chunk = 1
     max_steps_per_episode = 100
 
     learning_rate = 0.1
     discount_rate = 0.9
     exploration_rate = 0.1
 
-    num_episodes = 500
+    num_episodes = 5
     theta_list = [0.05, 0.15]
     x_axis = np.linspace(1, num_episodes, int(num_episodes / ep_chunk))
     plot_rew = False
@@ -366,14 +367,17 @@ if __name__ == '__main__':
     show_plot = False
     teaching = False
     no_teaching = True
-    avg_over = 10
-    q_init_list = [(100, 100), (10, 10), (0.5, 0.5), (0, 0), (-10, -10),
-                   (-100, -100)]
+    init_random = True
+    avg_over = 1
+    # q_init_list = [(100, 100), (10, 10), (0.5, 0.5), (0, 0), (-10, -10),
+    #                (-100, -100)]
+    q_init_list = [(100, 101), (10, 11), (0, 1), (-1, 0), (-11, -10),
+                   (-101, -100)]
     grid_list = ['MiniGrid-Empty-Reward-0-1-5x5-v0', 'MiniGrid-Empty-Reward-0-1-10x10-v0',
                  'MiniGrid-Empty-Reward-0-1-20x20-v0']
 
     for grid in grid_list:
-        main_dir = f'{grid}_avg_{avg_over}/'
+        main_dir = f'{grid}_avg_{avg_over}_random_{init_random}/'
         try:
             os.mkdir(main_dir)
         except:
@@ -387,7 +391,7 @@ if __name__ == '__main__':
         terminal_states = [(actual_grid_width, actual_grid_height)]
         goal_state = terminal_states[-1]
         for q_init in q_init_list:
-            title = f'{grid}, Avg over {avg_over} runs'
+            title = f'{grid}, Avg over {avg_over} runs, Random = {init_random}'
             if no_teaching:
                 avg_steps_all_ep_nt = np.zeros(num_episodes // ep_chunk)
                 for avg_num in range(1, avg_over + 1):
@@ -395,7 +399,8 @@ if __name__ == '__main__':
                           f' {q_init[1]}) '
                           f'run: {avg_num}')
                     q_table_nt = init_q_table(actual_grid_height, actual_grid_width,
-                                                 num_actions, random=False,
+                                                 num_actions,
+                                                 random=init_random,
                                                  min=q_init[0],
                                                  max=q_init[1],
                                                  terminal_states=terminal_states)
@@ -432,7 +437,7 @@ if __name__ == '__main__':
     no_teaching = False
 
     for grid in grid_list:
-        main_dir = f'{grid}_avg_{avg_over}/'
+        main_dir = f'{grid}_avg_{avg_over}_random_{init_random}/'
         try:
             os.mkdir(main_dir)
         except:
@@ -447,7 +452,7 @@ if __name__ == '__main__':
         goal_state = terminal_states[-1]
         for theta in theta_list:
             for q_init in q_init_list:
-                title = f'{grid}, Avg over {avg_over} runs, Theta = {theta}'
+                title = f'{grid}, Avg over {avg_over} runs, Theta = {theta}, Random = {init_random}'
                 if no_teaching:
                     avg_steps_all_ep_nt = np.zeros(num_episodes // ep_chunk)
                     for avg_num in range(1, avg_over + 1):
@@ -456,7 +461,7 @@ if __name__ == '__main__':
                             f'run: {avg_num}')
                         q_table_nt = init_q_table(actual_grid_height,
                                                   actual_grid_width,
-                                                  num_actions, random=False,
+                                                  num_actions, random=init_random,
                                                   min=q_init[0],
                                                   max=q_init[1],
                                                   terminal_states=terminal_states)
@@ -478,11 +483,12 @@ if __name__ == '__main__':
                     avg_steps_all_ep_t = np.zeros(num_episodes // ep_chunk)
                     for avg_num in range(1, avg_over + 1):
                         print(
-                            f'Teaching {grid} Cons Init ({q_init[0]}, {q_init[1]}) run:'
+                            f'Teaching {grid}, Theta = {theta}, Cons Init ({q_init[0]},'
+                            f' {q_init[1]}) run:'
                             f' {avg_num}')
                         q_table_t = init_q_table(actual_grid_height,
                                                  actual_grid_width,
-                                                 num_actions, random=False,
+                                                 num_actions, random=init_random,
                                                  min=q_init[0],
                                                  max=q_init[1],
                                                  terminal_states=terminal_states)
@@ -540,19 +546,21 @@ if __name__ == '__main__':
             else:
                 plt.close()
 
-    # Actually render environment and watch the agent
-    # visualize_agent(q_table_t, num_episodes=2)
+        # Actually render environment and watch the agent
+        # visualize_agent(q_table_t, num_episodes=2)
 
 
     theta_list = [0.005, 0.015]
-    q_init_list = [(10, 10), (0, 0), (-5, -5), (-10, -10),
-                   (-11, -11), (-100, -100)]
+    # q_init_list = [(10, 10), (0, 0), (-5, -5), (-10, -10),
+    #                (-11, -11), (-100, -100)]
+    q_init_list = [(10, 11), (0, 1), (-10, 0), (-10, -9),
+                   (-12, -11), (-101, -100)]
     grid_list = ['MiniGrid-Empty-Reward--1-0-5x5-v0',
                  'MiniGrid-Empty-Reward--1-0-10x10-v0',
                  'MiniGrid-Empty-Reward--1-0-20x20-v0']
 
     for grid in grid_list:
-        main_dir = f'{grid}_avg_{avg_over}/'
+        main_dir = f'{grid}_avg_{avg_over}_random_{init_random}/'
         try:
             os.mkdir(main_dir)
         except:
@@ -566,14 +574,14 @@ if __name__ == '__main__':
         terminal_states = [(actual_grid_width, actual_grid_height)]
         goal_state = terminal_states[-1]
         for q_init in q_init_list:
-            title = f'{grid}, Avg over {avg_over} runs'
+            title = f'{grid}, Avg over {avg_over} runs, Random = {init_random}'
             if no_teaching:
                 avg_steps_all_ep_nt = np.zeros(num_episodes // ep_chunk)
                 for avg_num in range(1, avg_over + 1):
                     print(f'No Teaching {grid} Cons Init ({q_init[0]}, {q_init[1]}) '
                           f'run: {avg_num}')
                     q_table_nt = init_q_table(actual_grid_height, actual_grid_width,
-                                                 num_actions, random=False,
+                                                 num_actions, random=init_random,
                                                  min=q_init[0],
                                                  max=q_init[1],
                                                  terminal_states=terminal_states)
@@ -610,7 +618,7 @@ if __name__ == '__main__':
     no_teaching = False
 
     for grid in grid_list:
-        main_dir = f'{grid}_avg_{avg_over}/'
+        main_dir = f'{grid}_avg_{avg_over}_random_{init_random}/'
         try:
             os.mkdir(main_dir)
         except:
@@ -625,7 +633,8 @@ if __name__ == '__main__':
         goal_state = terminal_states[-1]
         for theta in theta_list:
             for q_init in q_init_list:
-                title = f'{grid}, Avg over {avg_over} runs, Theta = {theta}'
+                title = f'{grid}, Avg over {avg_over} runs, Theta = {theta}, ' \
+                        f'Random = {init_random}'
                 if no_teaching:
                     avg_steps_all_ep_nt = np.zeros(num_episodes // ep_chunk)
                     for avg_num in range(1, avg_over + 1):
@@ -634,7 +643,7 @@ if __name__ == '__main__':
                             f'run: {avg_num}')
                         q_table_nt = init_q_table(actual_grid_height,
                                                   actual_grid_width,
-                                                  num_actions, random=False,
+                                                  num_actions, random=init_random,
                                                   min=q_init[0],
                                                   max=q_init[1],
                                                   terminal_states=terminal_states)
@@ -656,11 +665,11 @@ if __name__ == '__main__':
                     avg_steps_all_ep_t = np.zeros(num_episodes // ep_chunk)
                     for avg_num in range(1, avg_over + 1):
                         print(
-                            f'Teaching {grid} Cons Init ({q_init[0]}, {q_init[1]}) run:'
+                            f'Teaching {grid}, Theta = {theta} Cons Init ({q_init[0]}, {q_init[1]}) run:'
                             f' {avg_num}')
                         q_table_t = init_q_table(actual_grid_height,
                                                  actual_grid_width,
-                                                 num_actions, random=False,
+                                                 num_actions, random=init_random,
                                                  min=q_init[0],
                                                  max=q_init[1],
                                                  terminal_states=terminal_states)
