@@ -41,6 +41,7 @@ def teach(q_table, policy, theta=0.1):
     return q_table
 
 
+
 def get_optimal_policy(q_table, terminal_states=None):
     height = q_table[0].loc[:, 1].size
     width = q_table[0].loc[1, :].size
@@ -181,7 +182,8 @@ def plot_step_progress(x_axis, save_loc, title, *argv):
 
     plt.xlabel('Episode number')
     plt.ylabel('Steps taken')
-    plt.title(title)
+    if title:
+        plt.title(title)
     plt.subplots_adjust(bottom=0.3)
     plt.legend(bbox_to_anchor=(0, -0.1, 1, -0.1), loc="upper left",
                mode="expand", borderaxespad=0, ncol=2)
@@ -260,7 +262,7 @@ def plot_reward_progress_overlay(x_axis, y_axis_1_1, y_axis_2_1, label_1,
     plt.show()
 
 
-def init_q_table(height, width, num_actions, random=True, min=0, max=0,
+def init_q_table(height, width, num_actions, random=False, min=0, max=0,
                  terminal_states=None):
     states = []
     for a in range(1, height + 1):
@@ -324,6 +326,49 @@ def gen_optimal_policy(height, width, goal_state):
     return optimal_policy
 
 
+def gen_near_optimal_policy(height, width, num_sub_optimal_states, goal_state):
+    assert height * width >= num_sub_optimal_states, 'num_sub_optimal_states ' \
+                                                     '<= height * width'
+    near_optimal_policy = gen_optimal_policy(height, width, goal_state)
+    sub_optimal_states = []
+    for i in range(num_sub_optimal_states):
+        rand_state = random.randint(1, height * width - 1)
+        while rand_state in sub_optimal_states:
+            rand_state = random.randint(1, height * width - 1)
+        sub_optimal_states.append(rand_state)
+
+    for sub_optimal_state in sub_optimal_states:
+        column = sub_optimal_state % width
+        if column == 0:
+            column = width
+        row = (sub_optimal_state - 1) // height + 1
+        new_action = random.randint(0, 3)
+        while new_action == 0 and row < height and column \
+                < width or new_action == 1 and row < height and column < \
+                width or new_action == 0 and row == 1 or new_action == 1 and \
+                column == width:
+            new_action = random.randint(0, 3)
+        near_optimal_policy.loc[row, column] = new_action
+    return near_optimal_policy
+
+
+def offset_q_table(q_table, offset, terminal_states=None):
+    for state in q_table.index:
+        for action in q_table.columns:
+            q_table.loc[state, action] += offset
+    if terminal_states:
+        for terminal_state in terminal_states:
+            q_table.loc[terminal_state] = 0
+
+def boost_greedy_actions(q_table, boost, terminal_states=None):
+    for state in q_table.index:
+        max_action = q_table.columns[q_table.loc[state].argmax()]
+        q_table.loc[state, max_action] += boost
+    if terminal_states:
+        for terminal_state in terminal_states:
+            q_table.loc[terminal_state] = 0
+
+
 if __name__ == '__main__':
     grid = 'MiniGrid-Empty-8x8-v0'
     env = gym.make(grid)
@@ -343,38 +388,245 @@ if __name__ == '__main__':
                                   num_actions, random=True, min=-11, max=-10,
                                   terminal_states=terminal_states)
     print(q_table_init_r)
+
     policy_init = get_optimal_policy(q_table_init_r, terminal_states)
     print(policy_init)
     pretty_print_policy(policy_init)
+
+
 
     teaching_policy = gen_optimal_policy(actual_grid_height,
                                          actual_grid_width, goal_state)
     pretty_print_policy(teaching_policy)
 
+    near_optimal_policy = gen_near_optimal_policy(actual_grid_height,
+                                          actual_grid_width,
+                                          num_sub_optimal_states=5,
+                                          goal_state=goal_state)
+    print(near_optimal_policy)
+    pretty_print_policy(near_optimal_policy)
 
-    ep_chunk = 1
+    q_table = teach(q_table_init_z, teaching_policy)
+    # boost_greedy_actions(q_table, 10, terminal_states)
+    print(q_table)
+
+
+    ep_chunk = 10
     max_steps_per_episode = 100
 
     learning_rate = 0.1
     discount_rate = 0.9
     exploration_rate = 0.1
 
-    num_episodes = 5
-    theta_list = [0.05, 0.15]
+    num_episodes = 2000
+    theta_list = [0.05, 0.15, 5]
+    num_sub_optimal_states_list = [0, 1, 2, 4, 8, 16]
+    # offset_list = [0, -5, -12]
+    # boost_list = [0, 1]
     x_axis = np.linspace(1, num_episodes, int(num_episodes / ep_chunk))
     plot_rew = False
     plot_step = True
     show_plot = False
+    save_fig = True
     teaching = False
     no_teaching = True
-    init_random = True
-    avg_over = 1
+    init_random = False
+    avg_over = 10
     # q_init_list = [(100, 100), (10, 10), (0.5, 0.5), (0, 0), (-10, -10),
     #                (-100, -100)]
-    q_init_list = [(100, 101), (10, 11), (0, 1), (-1, 0), (-11, -10),
-                   (-101, -100)]
+    # q_init_list = [(100, 101), (10, 11), (0, 1), (-1, 0), (-11, -10),
+    #                (-101, -100)]
+    q_init_list = [(-10, -10)]
     grid_list = ['MiniGrid-Empty-Reward-0-1-5x5-v0', 'MiniGrid-Empty-Reward-0-1-10x10-v0',
                  'MiniGrid-Empty-Reward-0-1-20x20-v0']
+    # grid_list = [('MiniGrid-Empty-Reward-0-1-5x5-v0',
+    #               'MiniGrid-Empty-Reward--1-0-5x5-v0'),
+    #              ('MiniGrid-Empty-Reward-0-1-10x10-v0',
+    #               'MiniGrid-Empty-Reward--1-0-10x10-v0'),
+    #              ('MiniGrid-Empty-Reward-0-1-20x20-v0',
+    #               'MiniGrid-Empty-Reward--1-0-20x20-v0')]
+    # grid_list = [('MiniGrid-Empty-Reward-0-1-20x20-v0',
+    #               'MiniGrid-Empty-Reward--1-0-20x20-v0')]
+    # grid_list = ['MiniGrid-Empty-Reward-0-1-10x10-v0']
+
+    # theta = 0.15
+    # inner_grid = 'MiniGrid-Empty-Reward--1-0-10x10-v0'
+
+    for grid in grid_list:
+        main_dir = f'{grid}_avg_{avg_over}_random' \
+                   f'_{init_random}/'
+        try:
+            os.mkdir(main_dir)
+        except:
+            pass
+
+        env = gym.make(grid)
+        num_actions = env.action_space.n
+        num_orientations = 4
+        actual_grid_height = env.height - 2
+        actual_grid_width = env.width - 2
+        terminal_states = [(actual_grid_width, actual_grid_height)]
+        goal_state = terminal_states[-1]
+        for q_init in q_init_list:
+            for theta in theta_list:
+                title = f'{grid}, Avg over {avg_over} runs, Random =' \
+                        f' {init_random}, Q_init: ({q_init[0]}, {q_init[1]}), Theta: ' \
+                        f'{theta}'
+                for num_sub_optimal_states in num_sub_optimal_states_list:
+                    avg_steps_all_ep = np.zeros(num_episodes // ep_chunk)
+                    for avg_num in range(1, avg_over + 1):
+                        print(f'{grid}, Theta: {theta}, Init: ({q_init[0]}, '
+                              f'{q_init[1]}), Num of Sub-opt states: '
+                              f'{num_sub_optimal_states}, run'
+                              f': {avg_num}')
+                        q_table = init_q_table(actual_grid_height,
+                                                   actual_grid_width,
+                                                     num_actions,
+                                                     random=init_random,
+                                                     min=q_init[0],
+                                                     max=q_init[1],
+                                                     terminal_states=terminal_states)
+                        target_policy = gen_near_optimal_policy(
+                            actual_grid_height, actual_grid_width,
+                                    num_sub_optimal_states, goal_state)
+                        q_table = teach(q_table, target_policy, theta=theta)
+                        steps_all_ep, rew_all_ep, t_rew_all_ep = \
+                            q_learning(
+                                q_table,
+                                num_episodes,
+                                max_steps_per_episode,
+                                learning_rate,
+                                discount_rate)
+
+                        avg_steps_all_ep += steps_all_ep / avg_over
+
+                    label = f'{num_sub_optimal_states} Sub optimal states'
+                    plot_step_progress(x_axis, None, None,
+                                       avg_steps_all_ep, label)
+
+                save_loc_step = main_dir + (f'near_optimal_q_init_'
+                                            f'{q_init[0]}_{q_init[1]}_theta_'
+                                            f'{theta}_sub_opt_actions.jpg')
+                if save_fig:
+                    plt.savefig(save_loc_step)
+                if show_plot:
+                    plt.show()
+                else:
+                    plt.close()
+    exit()
+
+
+    for grid in grid_list:
+        main_dir = f'{grid[0]}_and_{grid[1]}_avg_{avg_over}_random' \
+                   f'_{init_random}/'
+        try:
+            os.mkdir(main_dir)
+        except:
+            pass
+
+        env = gym.make(grid[0])
+        num_actions = env.action_space.n
+        num_orientations = 4
+        actual_grid_height = env.height - 2
+        actual_grid_width = env.width - 2
+        terminal_states = [(actual_grid_width, actual_grid_height)]
+        goal_state = terminal_states[-1]
+        for q_init in q_init_list:
+            print(f'{grid[0]}, Theta: {theta}, ({q_init[0]}, '
+                  f'{q_init[1]})')
+            q_table_env1 = init_q_table(actual_grid_height,
+                                       actual_grid_width,
+                                         num_actions,
+                                         random=init_random,
+                                         min=q_init[0],
+                                         max=q_init[1],
+                                         terminal_states=terminal_states)
+            target_policy = gen_optimal_policy(actual_grid_height,
+                                               actual_grid_width,
+                                               goal_state)
+            q_table_env1 = teach(q_table_env1, target_policy, theta=theta)
+            steps_all_ep, rew_all_ep, t_rew_all_ep = \
+                q_learning(
+                    q_table_env1,
+                    num_episodes,
+                    max_steps_per_episode,
+                    learning_rate,
+                    discount_rate)
+
+            print(f'max value in q-table: \n'
+                  f'{q_table_env1.loc[q_table_env1.index[:-1]].max()}')
+            print(f'min value in q-table: \n'
+                  f'{q_table_env1.loc[q_table_env1.index[:-1]].min()}')
+
+            label = f'1st Env Init : ({q_init[0]},' \
+                              f' {q_init[1]}), Theta: {theta}'
+            plot_step_progress(x_axis, None, None,
+                               steps_all_ep, label)
+
+            env = gym.make(grid[1])
+            avg_steps_all_ep_r2 = np.zeros(num_episodes // ep_chunk)
+            for avg_num in range(1, avg_over + 1):
+                print(f'{grid[1]} raw run: {avg_num}')
+                init_0 = -5
+                init_1 = -5
+                q_table_env2 = init_q_table(actual_grid_height,
+                                       actual_grid_width,
+                                       num_actions,
+                                       random=False,
+                                       min=init_0,
+                                       max=init_1,
+                                       terminal_states=terminal_states)
+                steps_all_ep, rew_all_ep, t_rew_all_ep = \
+                    q_learning(
+                        q_table_env2,
+                        num_episodes,
+                        max_steps_per_episode,
+                        learning_rate,
+                        discount_rate)
+                avg_steps_all_ep_r2 += steps_all_ep / avg_over
+            label = f'2nd Env Init ({init_0}, {init_1})'
+            plot_step_progress(x_axis, None, None,
+                               avg_steps_all_ep_r2, label)
+
+            for offset in offset_list:
+                for boost in boost_list:
+                    avg_steps_all_ep_r2 = np.zeros(num_episodes // ep_chunk)
+                    for inner_avg_num in range(1, avg_over + 1):
+                        q_table_copy = q_table_env1.copy()
+                        print(f'{grid[1]}, Offset: {offset}, Boost: '
+                              f'{boost} run: {inner_avg_num}')
+                        offset_q_table(q_table_copy, offset,
+                                                 terminal_states=terminal_states)
+                        boost_greedy_actions(q_table_copy, boost, terminal_states=terminal_states)
+                        print(f'max value in q-table_copy: \n'
+                              f'{q_table_copy.loc[q_table_copy.index[:-1]].max()}')
+                        print(f'min value in q-table_copy: \n'
+                              f'{q_table_copy.loc[q_table_copy.index[:-1]].min()}')
+                        steps_all_ep, rew_all_ep, t_rew_all_ep = \
+                            q_learning(
+                                q_table_copy,
+                                num_episodes,
+                                max_steps_per_episode,
+                                learning_rate,
+                                discount_rate)
+                        avg_steps_all_ep_r2 += steps_all_ep / avg_over
+
+                    label = f'2nd Env Offset: {offset}, Boost: {boost}'
+                    plot_step_progress(x_axis, None, None,
+                                       avg_steps_all_ep_r2, label)
+
+        title = f'{grid[0]}, {grid[1]}, Avg over {avg_over} runs, Random =' \
+                f' {init_random}'
+        save_loc_step = main_dir + (f'q_table_env_transfer_updated_boost.jpg')
+
+        if save_fig:
+            plt.savefig(save_loc_step)
+        if show_plot:
+            plt.show()
+        else:
+            plt.close()
+    exit()
+
 
     for grid in grid_list:
         main_dir = f'{grid}_avg_{avg_over}_random_{init_random}/'
