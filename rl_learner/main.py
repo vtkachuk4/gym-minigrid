@@ -418,7 +418,7 @@ if __name__ == '__main__':
     discount_rate = 0.9
     exploration_rate = 0.1
 
-    num_episodes = 2000
+    num_episodes = 1000
     theta_list = [0.05, 0.15, 5]
     num_sub_optimal_states_list = [0, 1, 2, 4, 8, 16]
     # offset_list = [0, -5, -12]
@@ -437,8 +437,10 @@ if __name__ == '__main__':
     # q_init_list = [(100, 101), (10, 11), (0, 1), (-1, 0), (-11, -10),
     #                (-101, -100)]
     q_init_list = [(-10, -10)]
-    grid_list = ['MiniGrid-Empty-Reward-0-1-5x5-v0', 'MiniGrid-Empty-Reward-0-1-10x10-v0',
-                 'MiniGrid-Empty-Reward-0-1-20x20-v0']
+    grid_list = ['MiniGrid-Empty-Reward-0-1-5x5-v0',
+                 'MiniGrid-Empty-Reward-0-1-10x10-v0']
+    # grid_list = ['MiniGrid-Empty-Reward-0-1-5x5-v0', 'MiniGrid-Empty-Reward-0-1-10x10-v0',
+    #              'MiniGrid-Empty-Reward-0-1-20x20-v0']
     # grid_list = [('MiniGrid-Empty-Reward-0-1-5x5-v0',
     #               'MiniGrid-Empty-Reward--1-0-5x5-v0'),
     #              ('MiniGrid-Empty-Reward-0-1-10x10-v0',
@@ -451,6 +453,7 @@ if __name__ == '__main__':
 
     # theta = 0.15
     # inner_grid = 'MiniGrid-Empty-Reward--1-0-10x10-v0'
+    nt_q_init = [(0.5, 0.5), (10, 10)]
 
     for grid in grid_list:
         main_dir = f'{grid}_avg_{avg_over}_random' \
@@ -469,9 +472,58 @@ if __name__ == '__main__':
         goal_state = terminal_states[-1]
         for q_init in q_init_list:
             for theta in theta_list:
-                title = f'{grid}, Avg over {avg_over} runs, Random =' \
-                        f' {init_random}, Q_init: ({q_init[0]}, {q_init[1]}), Theta: ' \
-                        f'{theta}'
+                avg_steps_all_ep = np.zeros(num_episodes // ep_chunk)
+                for avg_num in range(1, avg_over + 1):
+                    print(f'No teaching Q-init: ({nt_q_init[0][0]}, '
+                          f'{nt_q_init[0][1]})')
+                    q_table = init_q_table(actual_grid_height,
+                                           actual_grid_width,
+                                           num_actions,
+                                           random=init_random,
+                                           min=nt_q_init[0][0],
+                                           max=nt_q_init[0][1],
+                                           terminal_states=terminal_states)
+                    steps_all_ep, rew_all_ep, t_rew_all_ep = \
+                        q_learning(
+                            q_table,
+                            num_episodes,
+                            max_steps_per_episode,
+                            learning_rate,
+                            discount_rate, test_policy=False)
+
+                    avg_steps_all_ep += steps_all_ep / avg_over
+
+                label = f'No teaching Q-table init: ({nt_q_init[0][0]}, ' \
+                        f'{nt_q_init[0][1]})'
+                plot_step_progress(x_axis, None, None,
+                                   avg_steps_all_ep, label)
+
+                avg_steps_all_ep = np.zeros(num_episodes // ep_chunk)
+                for avg_num in range(1, avg_over + 1):
+                    print(f'No teaching Q-init: ({nt_q_init[1][0]}, '
+                          f'{nt_q_init[1][1]})')
+                    q_table = init_q_table(actual_grid_height,
+                                           actual_grid_width,
+                                           num_actions,
+                                           random=init_random,
+                                           min=nt_q_init[1][0],
+                                           max=nt_q_init[1][1],
+                                           terminal_states=terminal_states)
+                    steps_all_ep, rew_all_ep, t_rew_all_ep = \
+                        q_learning(
+                            q_table,
+                            num_episodes,
+                            max_steps_per_episode,
+                            learning_rate,
+                            discount_rate, test_policy=False)
+
+                    avg_steps_all_ep += steps_all_ep / avg_over
+
+                label = f'No teaching Q-table init: ({nt_q_init[1][0]}, ' \
+                        f'{nt_q_init[1][1]})'
+                plot_step_progress(x_axis, None, None,
+                                   avg_steps_all_ep, label)
+
                 for num_sub_optimal_states in num_sub_optimal_states_list:
                     avg_steps_all_ep = np.zeros(num_episodes // ep_chunk)
                     for avg_num in range(1, avg_over + 1):
@@ -496,7 +548,7 @@ if __name__ == '__main__':
                                 num_episodes,
                                 max_steps_per_episode,
                                 learning_rate,
-                                discount_rate)
+                                discount_rate, test_policy=False)
 
                         avg_steps_all_ep += steps_all_ep / avg_over
 
@@ -504,6 +556,10 @@ if __name__ == '__main__':
                     plot_step_progress(x_axis, None, None,
                                        avg_steps_all_ep, label)
 
+                plt.title(f'{grid}, Avg over {avg_over} runs, Random =' \
+                        f' {init_random}, Init: ({q_init[0]}, {q_init[1]}), '
+                          f'Theta: ' \
+                        f'{theta}')
                 save_loc_step = main_dir + (f'near_optimal_q_init_'
                                             f'{q_init[0]}_{q_init[1]}_theta_'
                                             f'{theta}_sub_opt_actions.jpg')
