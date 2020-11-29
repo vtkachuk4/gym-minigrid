@@ -175,7 +175,7 @@ def plot_step_progress(x_axis, save_loc, title, *argv):
     linewidth = 2
     iters = len(argv) // 2
 
-    plt.rcParams["figure.figsize"] = (10, 5)
+    plt.rcParams["figure.figsize"] = (13, 5)
     for i in range(iters):
         plt.plot(x_axis, argv[i * 2 + 0], label=argv[i * 2 + 1], alpha=alpha,
                  linewidth=linewidth)
@@ -184,8 +184,8 @@ def plot_step_progress(x_axis, save_loc, title, *argv):
     plt.ylabel('Steps taken')
     if title:
         plt.title(title)
-    plt.subplots_adjust(bottom=0.3)
-    plt.legend(bbox_to_anchor=(0, -0.1, 1, -0.1), loc="upper left",
+    plt.subplots_adjust(bottom=0.30)
+    plt.legend(bbox_to_anchor=(0, -0.09, 1, -0.09), loc="upper left",
                mode="expand", borderaxespad=0, ncol=2)
     # plt.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
 
@@ -286,11 +286,12 @@ def init_q_table(height, width, num_actions, random=False, min=0, max=0,
     return q_table
 
 
-def visualize_agent(q_table, num_episodes=2, max_steps_per_episode=100):
+def visualize_agent(q_table, num_episodes=1, max_steps_per_episode=100):
     for episode in range(num_episodes):
         state = env.reset()
 
         for step in range(max_steps_per_episode):
+            time.sleep(5)
             env.render()
 
             action = q_table.columns[q_table.loc[state].argmax()]
@@ -360,6 +361,12 @@ def offset_q_table(q_table, offset, terminal_states=None):
         for terminal_state in terminal_states:
             q_table.loc[terminal_state] = 0
 
+
+def set_q_table_vals(q_table, state_list, val=0):
+    for state in state_list:
+        q_table.loc[state] = val
+
+
 def boost_greedy_actions(q_table, boost, terminal_states=None):
     for state in q_table.index:
         max_action = q_table.columns[q_table.loc[state].argmax()]
@@ -411,18 +418,19 @@ if __name__ == '__main__':
     print(q_table)
 
 
-    ep_chunk = 10
     max_steps_per_episode = 100
 
     learning_rate = 0.1
     discount_rate = 0.9
     exploration_rate = 0.1
 
-    num_episodes = 1000
-    theta_list = [0.05, 0.15, 5]
-    num_sub_optimal_states_list = [0, 1, 2, 4, 8, 16]
-    # offset_list = [0, -5, -12]
-    # boost_list = [0, 1]
+    num_episodes = 300
+    ep_chunk = 10
+    avg_over = 20
+    theta_list = [0.025, 0.05, 0.10, 0.15, 0.20]
+    # num_sub_optimal_states_list = [0, 1, 2, 4, 8, 16]
+    # offset_list = [0, -1]
+    # boost_list = [0]
     x_axis = np.linspace(1, num_episodes, int(num_episodes / ep_chunk))
     plot_rew = False
     plot_step = True
@@ -430,29 +438,240 @@ if __name__ == '__main__':
     save_fig = True
     teaching = False
     no_teaching = True
-    init_random = False
-    avg_over = 10
+    # init_random = False
+    init_random = [False, True, False, True, False, True, False, True]
     # q_init_list = [(100, 100), (10, 10), (0.5, 0.5), (0, 0), (-10, -10),
     #                (-100, -100)]
     # q_init_list = [(100, 101), (10, 11), (0, 1), (-1, 0), (-11, -10),
     #                (-101, -100)]
-    q_init_list = [(-10, -10)]
+    q_init_list = [(0, 0), (-1, 0), (-1, -1), (-2, -1), (-5, -5), (-6, -5),
+                   (-10, -10), (-11, -10)]
+    # q_init_list = [(0, 0)]
+    # grid_list = ['MiniGrid-Empty-Reward-0-1-20x20-v0']
     grid_list = ['MiniGrid-Empty-Reward-0-1-5x5-v0',
-                 'MiniGrid-Empty-Reward-0-1-10x10-v0']
-    # grid_list = ['MiniGrid-Empty-Reward-0-1-5x5-v0', 'MiniGrid-Empty-Reward-0-1-10x10-v0',
-    #              'MiniGrid-Empty-Reward-0-1-20x20-v0']
+                 'MiniGrid-Empty-Reward-0-1-10x10-v0',
+                 'MiniGrid-Empty-Reward-0-1-20x20-v0']
     # grid_list = [('MiniGrid-Empty-Reward-0-1-5x5-v0',
     #               'MiniGrid-Empty-Reward--1-0-5x5-v0'),
     #              ('MiniGrid-Empty-Reward-0-1-10x10-v0',
     #               'MiniGrid-Empty-Reward--1-0-10x10-v0'),
     #              ('MiniGrid-Empty-Reward-0-1-20x20-v0',
     #               'MiniGrid-Empty-Reward--1-0-20x20-v0')]
+    # grid_list = [('MiniGrid-Empty-Reward-0-1-5x5-v0',
+    #               'MiniGrid-Empty-Reward-0-1-Wall1-5x5-v0',
+    #               'MiniGrid-Empty-Reward-0-1-Wall2-5x5-v0'),
+    #              ('MiniGrid-Empty-Reward-0-1-10x10-v0',
+    #               'MiniGrid-Empty-Reward-0-1-Wall1-10x10-v0',
+    #               'MiniGrid-Empty-Reward-0-1-Wall2-10x10-v0'),
+    #              ('MiniGrid-Empty-Reward-0-1-20x20-v0',
+    #               'MiniGrid-Empty-Reward-0-1-Wall1-20x20-v0',
+    #               'MiniGrid-Empty-Reward-0-1-Wall2-20x20-v0')]
+    # grid_list = [('MiniGrid-Empty-Reward-0-1-10x10-v0',
+    #               'MiniGrid-Empty-Reward-0-1-Wall1-10x10-v0',
+    #               'MiniGrid-Empty-Reward-0-1-Wall2-10x10-v0',
+    #               'MiniGrid-Empty-Reward-0-1-Wall3-10x10-v0'),
+    #              ('MiniGrid-Empty-Reward-0-1-20x20-v0',
+    #               'MiniGrid-Empty-Reward-0-1-Wall1-20x20-v0',
+    #               'MiniGrid-Empty-Reward-0-1-Wall2-20x20-v0',
+    #               'MiniGrid-Empty-Reward-0-1-Wall3-20x20-v0')
+    #              ]
     # grid_list = [('MiniGrid-Empty-Reward-0-1-20x20-v0',
-    #               'MiniGrid-Empty-Reward--1-0-20x20-v0')]
-    # grid_list = ['MiniGrid-Empty-Reward-0-1-10x10-v0']
+    #               'MiniGrid-Empty-Reward-0-1-Wall2-20x20-v0')]
 
-    # theta = 0.15
-    # inner_grid = 'MiniGrid-Empty-Reward--1-0-10x10-v0'
+    # Below is for multiple theta and Q-init
+    for grid in grid_list:
+        main_dir = f'{grid}_avg_{avg_over}/'
+        try:
+            os.mkdir(main_dir)
+        except:
+            pass
+
+        env = gym.make(grid)
+        num_actions = env.action_space.n
+        num_orientations = 4
+        actual_grid_height = env.height - 2
+        actual_grid_width = env.width - 2
+        terminal_states = [(actual_grid_width, actual_grid_height)]
+        goal_state = terminal_states[-1]
+        for theta in theta_list:
+            for i, q_init in enumerate(q_init_list):
+                avg_steps_all_ep = np.zeros(num_episodes // ep_chunk)
+                for avg_num in range(1, avg_over + 1):
+                    print(f'{grid}, Theta: {theta}, ({q_init[0]}, '
+                          f'{q_init[1]}), run: {avg_num}')
+                    q_table_env1 = init_q_table(actual_grid_height,
+                                               actual_grid_width,
+                                                 num_actions,
+                                                 random=init_random[i],
+                                                 min=q_init[0],
+                                                 max=q_init[1],
+                                                 terminal_states=terminal_states)
+                    target_policy = gen_optimal_policy(actual_grid_height,
+                                                       actual_grid_width,
+                                                       goal_state)
+                    q_table_env1 = teach(q_table_env1, target_policy, theta=theta)
+
+                    steps_all_ep, rew_all_ep, t_rew_all_ep = \
+                        q_learning(
+                            q_table_env1,
+                            num_episodes,
+                            max_steps_per_episode,
+                            learning_rate,
+                            discount_rate)
+
+                    avg_steps_all_ep += steps_all_ep / avg_over
+
+                label = f'{grid} Init : ({q_init[0]},' \
+                                  f' {q_init[1]})'
+                plot_step_progress(x_axis, None, None,
+                                   avg_steps_all_ep, label)
+
+            plt.title(f'{grid} Rand and Const init, Theta: {theta}, Avg over'
+                      f' {avg_over} runs')
+            save_loc_step = main_dir + (f'rand_and_const_init_theta_{theta}.jpg')
+
+            if save_fig:
+                plt.savefig(save_loc_step)
+            if show_plot:
+                plt.show()
+            else:
+                plt.close()
+    exit()
+
+
+    # Below is for wall env
+
+    theta = 0.15
+
+    for grid in grid_list:
+        main_dir = f'{grid[0]}_and_wall_avg_{avg_over}_random' \
+                   f'_{init_random}/'
+        try:
+            os.mkdir(main_dir)
+        except:
+            pass
+
+        env = gym.make(grid[0])
+        num_actions = env.action_space.n
+        num_orientations = 4
+        actual_grid_height = env.height - 2
+        actual_grid_width = env.width - 2
+        terminal_states = [(actual_grid_width, actual_grid_height)]
+        goal_state = terminal_states[-1]
+        for q_init in q_init_list:
+            print(f'{grid[0]}, Theta: {theta}, ({q_init[0]}, '
+                  f'{q_init[1]})')
+            q_table_env1 = init_q_table(actual_grid_height,
+                                       actual_grid_width,
+                                         num_actions,
+                                         random=init_random,
+                                         min=q_init[0],
+                                         max=q_init[1],
+                                         terminal_states=terminal_states)
+            target_policy = gen_optimal_policy(actual_grid_height,
+                                               actual_grid_width,
+                                               goal_state)
+            q_table_env1 = teach(q_table_env1, target_policy, theta=theta)
+
+            steps_all_ep, rew_all_ep, t_rew_all_ep = \
+                q_learning(
+                    q_table_env1,
+                    num_episodes,
+                    max_steps_per_episode,
+                    learning_rate,
+                    discount_rate)
+
+            # print(f'max value in q-table: \n'
+            #       f'{q_table_env1.loc[q_table_env1.index[:-1]].max()}')
+            # print(f'min value in q-table: \n'
+            #       f'{q_table_env1.loc[q_table_env1.index[:-1]].min()}')
+
+            label = f'{grid[0]} Init : ({q_init[0]},' \
+                              f' {q_init[1]}), Theta: {theta}'
+            plot_step_progress(x_axis, None, None,
+                               steps_all_ep, label)
+
+            for i in range(1, len(grid)):
+                env = gym.make(grid[i])
+                terminal_states = env.gap_pos_list + terminal_states
+                avg_steps_all_ep_r2 = np.zeros(num_episodes // ep_chunk)
+                for avg_num in range(1, avg_over + 1):
+                    print(f'{grid[i]} raw run: {avg_num}')
+                    init_0 = 0
+                    init_1 = 1
+                    q_table_env2 = init_q_table(actual_grid_height,
+                                           actual_grid_width,
+                                           num_actions,
+                                           random=True,
+                                           min=init_0,
+                                           max=init_1,
+                                           terminal_states=terminal_states)
+                    steps_all_ep, rew_all_ep, t_rew_all_ep = \
+                        q_learning(
+                            q_table_env2,
+                            num_episodes,
+                            max_steps_per_episode,
+                            learning_rate,
+                            discount_rate)
+                    avg_steps_all_ep_r2 += steps_all_ep / avg_over
+                label = f'{grid[i]} Init ({init_0}, {init_1})'
+                plot_step_progress(x_axis, None, None,
+                                   avg_steps_all_ep_r2, label)
+
+            for i in range(1, len(grid)):
+                env = gym.make(grid[i])
+                terminal_states = env.gap_pos_list + terminal_states
+                for offset in offset_list:
+                    for boost in boost_list:
+                        avg_steps_all_ep_r2 = np.zeros(num_episodes // ep_chunk)
+                        for inner_avg_num in range(1, avg_over + 1):
+                            q_table_copy = q_table_env1.copy()
+
+                            print(f'{grid[i]}, Offset: {offset}, Boost: '
+                                  f'{boost} run: {inner_avg_num}')
+                            offset_q_table(q_table_copy, offset,
+                                                     terminal_states=terminal_states)
+                            boost_greedy_actions(q_table_copy, boost, terminal_states=terminal_states)
+                            set_q_table_vals(q_table_copy,
+                                             state_list=terminal_states,
+                                             val=0)
+                            # print(f'max value in q-table_copy: \n'
+                            #       f'{q_table_copy.loc[q_table_copy.index[:-1]].max()}')
+                            # print(f'min value in q-table_copy: \n'
+                            #       f'{q_table_copy.loc[q_table_copy.index[:-1]].min()}')
+                            steps_all_ep, rew_all_ep, t_rew_all_ep = \
+                                q_learning(
+                                    q_table_copy,
+                                    num_episodes,
+                                    max_steps_per_episode,
+                                    learning_rate,
+                                    discount_rate)
+                            avg_steps_all_ep_r2 += steps_all_ep / avg_over
+
+                        optimal_policy = get_optimal_policy(q_table_copy,
+                                                            terminal_states=terminal_states)
+                        pretty_print_policy(optimal_policy)
+                        visualize_agent(q_table_copy)
+
+
+                        label = f'{grid[i]} Offset: {offset}, Boost: {boost}'
+                        plot_step_progress(x_axis, None, None,
+                                           avg_steps_all_ep_r2, label)
+
+
+        plt.title(f'{grid[0]} and Wall Avg over {avg_over} runs, Random =' \
+                f' {init_random}')
+        save_loc_step = main_dir + (f'q_table_env_transfer_to_wall.jpg')
+
+        if save_fig:
+            plt.savefig(save_loc_step)
+        if show_plot:
+            plt.show()
+        else:
+            plt.close()
+    exit()
+
+
     nt_q_init = [(0.5, 0.5), (10, 10)]
 
     for grid in grid_list:
@@ -572,116 +791,6 @@ if __name__ == '__main__':
     exit()
 
 
-    for grid in grid_list:
-        main_dir = f'{grid[0]}_and_{grid[1]}_avg_{avg_over}_random' \
-                   f'_{init_random}/'
-        try:
-            os.mkdir(main_dir)
-        except:
-            pass
-
-        env = gym.make(grid[0])
-        num_actions = env.action_space.n
-        num_orientations = 4
-        actual_grid_height = env.height - 2
-        actual_grid_width = env.width - 2
-        terminal_states = [(actual_grid_width, actual_grid_height)]
-        goal_state = terminal_states[-1]
-        for q_init in q_init_list:
-            print(f'{grid[0]}, Theta: {theta}, ({q_init[0]}, '
-                  f'{q_init[1]})')
-            q_table_env1 = init_q_table(actual_grid_height,
-                                       actual_grid_width,
-                                         num_actions,
-                                         random=init_random,
-                                         min=q_init[0],
-                                         max=q_init[1],
-                                         terminal_states=terminal_states)
-            target_policy = gen_optimal_policy(actual_grid_height,
-                                               actual_grid_width,
-                                               goal_state)
-            q_table_env1 = teach(q_table_env1, target_policy, theta=theta)
-            steps_all_ep, rew_all_ep, t_rew_all_ep = \
-                q_learning(
-                    q_table_env1,
-                    num_episodes,
-                    max_steps_per_episode,
-                    learning_rate,
-                    discount_rate)
-
-            print(f'max value in q-table: \n'
-                  f'{q_table_env1.loc[q_table_env1.index[:-1]].max()}')
-            print(f'min value in q-table: \n'
-                  f'{q_table_env1.loc[q_table_env1.index[:-1]].min()}')
-
-            label = f'1st Env Init : ({q_init[0]},' \
-                              f' {q_init[1]}), Theta: {theta}'
-            plot_step_progress(x_axis, None, None,
-                               steps_all_ep, label)
-
-            env = gym.make(grid[1])
-            avg_steps_all_ep_r2 = np.zeros(num_episodes // ep_chunk)
-            for avg_num in range(1, avg_over + 1):
-                print(f'{grid[1]} raw run: {avg_num}')
-                init_0 = -5
-                init_1 = -5
-                q_table_env2 = init_q_table(actual_grid_height,
-                                       actual_grid_width,
-                                       num_actions,
-                                       random=False,
-                                       min=init_0,
-                                       max=init_1,
-                                       terminal_states=terminal_states)
-                steps_all_ep, rew_all_ep, t_rew_all_ep = \
-                    q_learning(
-                        q_table_env2,
-                        num_episodes,
-                        max_steps_per_episode,
-                        learning_rate,
-                        discount_rate)
-                avg_steps_all_ep_r2 += steps_all_ep / avg_over
-            label = f'2nd Env Init ({init_0}, {init_1})'
-            plot_step_progress(x_axis, None, None,
-                               avg_steps_all_ep_r2, label)
-
-            for offset in offset_list:
-                for boost in boost_list:
-                    avg_steps_all_ep_r2 = np.zeros(num_episodes // ep_chunk)
-                    for inner_avg_num in range(1, avg_over + 1):
-                        q_table_copy = q_table_env1.copy()
-                        print(f'{grid[1]}, Offset: {offset}, Boost: '
-                              f'{boost} run: {inner_avg_num}')
-                        offset_q_table(q_table_copy, offset,
-                                                 terminal_states=terminal_states)
-                        boost_greedy_actions(q_table_copy, boost, terminal_states=terminal_states)
-                        print(f'max value in q-table_copy: \n'
-                              f'{q_table_copy.loc[q_table_copy.index[:-1]].max()}')
-                        print(f'min value in q-table_copy: \n'
-                              f'{q_table_copy.loc[q_table_copy.index[:-1]].min()}')
-                        steps_all_ep, rew_all_ep, t_rew_all_ep = \
-                            q_learning(
-                                q_table_copy,
-                                num_episodes,
-                                max_steps_per_episode,
-                                learning_rate,
-                                discount_rate)
-                        avg_steps_all_ep_r2 += steps_all_ep / avg_over
-
-                    label = f'2nd Env Offset: {offset}, Boost: {boost}'
-                    plot_step_progress(x_axis, None, None,
-                                       avg_steps_all_ep_r2, label)
-
-        title = f'{grid[0]}, {grid[1]}, Avg over {avg_over} runs, Random =' \
-                f' {init_random}'
-        save_loc_step = main_dir + (f'q_table_env_transfer_updated_boost.jpg')
-
-        if save_fig:
-            plt.savefig(save_loc_step)
-        if show_plot:
-            plt.show()
-        else:
-            plt.close()
-    exit()
 
 
     for grid in grid_list:

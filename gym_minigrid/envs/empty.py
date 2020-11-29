@@ -9,16 +9,26 @@ class EmptyEnv(MiniGridEnv):
     def __init__(
         self,
         size=8,
-        agent_start_pos=(1,1),
+        grid_width=None,
+        grid_height=None,
+        agent_start_pos=(1, 1),
         agent_start_dir=0,
         step_reward=0,
-        final_reward=1
+        final_reward=1,
+        obstacle_type=None,
+        gap_pos_list=None
     ):
         self.agent_start_pos = agent_start_pos
         self.agent_start_dir = agent_start_dir
+        self.obstacle_type = obstacle_type
+        self.gap_pos_list = gap_pos_list
+        if grid_height == None and grid_width == None:
+            grid_height = size
+            grid_width = size
 
         super().__init__(
-            grid_size=size,
+            height=grid_height,
+            width=grid_width,
             max_steps=4*size*size,
             # Set this to True for maximum speed
             see_through_walls=True,
@@ -43,11 +53,25 @@ class EmptyEnv(MiniGridEnv):
         else:
             self.place_agent()
 
-        self.mission = "get to the green goal square"
+
+        if self.obstacle_type:
+            # Place the obstacle
+            assert self.gap_pos_list, 'You must specify a gap_pos where you ' \
+                                   'would ' \
+                                 'like the obstacle to be placed'
+            for gap_pos in self.gap_pos_list:
+                self.put_obj(self.obstacle_type(), gap_pos[0], gap_pos[1])
+            self.mission = (
+                "avoid the lava and get to the green goal square"
+                if self.obstacle_type == Wall
+                else "find the opening and get to the green goal square"
+            )
+        else:
+            self.mission = "get to the green goal square"
 
 class EmptyEnv5x5(EmptyEnv):
     def __init__(self, **kwargs):
-        super().__init__(size=7, **kwargs)
+        super().__init__(size=5, **kwargs)
 
 class EmptyRandomEnv5x5(EmptyEnv):
     def __init__(self):
@@ -66,10 +90,35 @@ class EmptyEnv16x16(EmptyEnv):
         super().__init__(size=16, **kwargs)
 
 
+class EmptyEnv1x3(EmptyEnv):
+    def __init__(self, **kwargs):
+        super().__init__(grid_height=3, grid_width=5, **kwargs)
+
+class EmptyEnv1x10(EmptyEnv):
+    def __init__(self, **kwargs):
+        super().__init__(grid_height=3, grid_width=12, **kwargs)
 
 class EmptyEnv5x5R01(EmptyEnv):
     def __init__(self, **kwargs):
         super().__init__(size=7, step_reward=0, final_reward=1, **kwargs)
+
+class EmptyEnv5x5R01Wall1(EmptyEnv):
+    def __init__(self, **kwargs):
+        super().__init__(size=7, step_reward=0, final_reward=1,
+                         obstacle_type=Wall, gap_pos_list=[(5, 3)], **kwargs)
+
+class EmptyEnv5x5R01Wall2(EmptyEnv):
+    def __init__(self, **kwargs):
+        super().__init__(size=7, step_reward=0, final_reward=1,
+                         obstacle_type=Wall, gap_pos_list=[(5, 3), (4, 3)],
+                         **kwargs)
+
+class EmptyEnv5x5R01Wall3(EmptyEnv):
+    def __init__(self, **kwargs):
+        super().__init__(size=7, step_reward=0, final_reward=1,
+                         obstacle_type=Wall, gap_pos_list=[(5, 3), (4, 3), (3,
+                                                                          3)],
+                         **kwargs)
 
 class EmptyEnv5x5Rn10(EmptyEnv):
     def __init__(self, **kwargs):
@@ -79,6 +128,24 @@ class EmptyEnv10x10R01(EmptyEnv):
     def __init__(self, **kwargs):
         super().__init__(size=12, step_reward=0, final_reward=1, **kwargs)
 
+class EmptyEnv10x10R01Wall1(EmptyEnv):
+    def __init__(self, **kwargs):
+        super().__init__(size=12, step_reward=0, final_reward=1,
+                         obstacle_type=Wall, gap_pos_list=[(10, 3)], **kwargs)
+
+class EmptyEnv10x10R01Wall2(EmptyEnv):
+    def __init__(self, **kwargs):
+        super().__init__(size=12, step_reward=0, final_reward=1,
+                         obstacle_type=Wall, gap_pos_list=[(10, 3), (9, 3)],
+                         **kwargs)
+
+class EmptyEnv10x10R01Wall3(EmptyEnv):
+    def __init__(self, **kwargs):
+        super().__init__(size=12, step_reward=0, final_reward=1,
+                         obstacle_type=Wall, gap_pos_list=[(10, 3), (9, 3),
+                                                           (8, 3)],
+                         **kwargs)
+
 class EmptyEnv10x10Rn10(EmptyEnv):
     def __init__(self, **kwargs):
         super().__init__(size=12, step_reward=-1, final_reward=0, **kwargs)
@@ -86,6 +153,27 @@ class EmptyEnv10x10Rn10(EmptyEnv):
 class EmptyEnv20x20R01(EmptyEnv):
     def __init__(self, **kwargs):
         super().__init__(size=22, step_reward=0, final_reward=1, **kwargs)
+
+
+class EmptyEnv20x20R01Wall1(EmptyEnv):
+    def __init__(self, **kwargs):
+        super().__init__(size=22, step_reward=0, final_reward=1,
+                         obstacle_type=Wall, gap_pos_list=[(20, 3)], **kwargs)
+
+
+class EmptyEnv20x20R01Wall2(EmptyEnv):
+    def __init__(self, **kwargs):
+        super().__init__(size=22, step_reward=0, final_reward=1,
+                         obstacle_type=Wall, gap_pos_list=[(20, 3), (19, 3)],
+                         **kwargs)
+
+
+class EmptyEnv20x20R01Wall3(EmptyEnv):
+    def __init__(self, **kwargs):
+        super().__init__(size=22, step_reward=0, final_reward=1,
+                         obstacle_type=Wall, gap_pos_list=[(20, 3), (19, 3),
+                                                           (18, 3)],
+                         **kwargs)
 
 class EmptyEnv20x20Rn10(EmptyEnv):
     def __init__(self, **kwargs):
@@ -123,8 +211,33 @@ register(
 
 
 register(
+    id='MiniGrid-Empty-1x3-v0',
+    entry_point='gym_minigrid.envs:EmptyEnv1x3'
+)
+
+register(
+    id='MiniGrid-Empty-1x10-v0',
+    entry_point='gym_minigrid.envs:EmptyEnv1x10'
+)
+
+register(
     id='MiniGrid-Empty-Reward-0-1-5x5-v0',
     entry_point='gym_minigrid.envs:EmptyEnv5x5R01'
+)
+
+register(
+    id='MiniGrid-Empty-Reward-0-1-Wall1-5x5-v0',
+    entry_point='gym_minigrid.envs:EmptyEnv5x5R01Wall1'
+)
+
+register(
+    id='MiniGrid-Empty-Reward-0-1-Wall2-5x5-v0',
+    entry_point='gym_minigrid.envs:EmptyEnv5x5R01Wall2'
+)
+
+register(
+    id='MiniGrid-Empty-Reward-0-1-Wall3-5x5-v0',
+    entry_point='gym_minigrid.envs:EmptyEnv5x5R01Wall3'
 )
 
 register(
@@ -138,6 +251,21 @@ register(
 )
 
 register(
+    id='MiniGrid-Empty-Reward-0-1-Wall1-10x10-v0',
+    entry_point='gym_minigrid.envs:EmptyEnv10x10R01Wall1'
+)
+
+register(
+    id='MiniGrid-Empty-Reward-0-1-Wall2-10x10-v0',
+    entry_point='gym_minigrid.envs:EmptyEnv10x10R01Wall2'
+)
+
+register(
+    id='MiniGrid-Empty-Reward-0-1-Wall3-10x10-v0',
+    entry_point='gym_minigrid.envs:EmptyEnv10x10R01Wall3'
+)
+
+register(
     id='MiniGrid-Empty-Reward--1-0-10x10-v0',
     entry_point='gym_minigrid.envs:EmptyEnv10x10Rn10'
 )
@@ -145,6 +273,21 @@ register(
 register(
     id='MiniGrid-Empty-Reward-0-1-20x20-v0',
     entry_point='gym_minigrid.envs:EmptyEnv20x20R01'
+)
+
+register(
+    id='MiniGrid-Empty-Reward-0-1-Wall1-20x20-v0',
+    entry_point='gym_minigrid.envs:EmptyEnv20x20R01Wall1'
+)
+
+register(
+    id='MiniGrid-Empty-Reward-0-1-Wall2-20x20-v0',
+    entry_point='gym_minigrid.envs:EmptyEnv20x20R01Wall2'
+)
+
+register(
+    id='MiniGrid-Empty-Reward-0-1-Wall3-20x20-v0',
+    entry_point='gym_minigrid.envs:EmptyEnv20x20R01Wall3'
 )
 
 register(

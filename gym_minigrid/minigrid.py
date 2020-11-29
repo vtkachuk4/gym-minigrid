@@ -63,11 +63,11 @@ DIR_TO_VEC = [
     # Pointing right (positive X)
     np.array((1, 0)),
     # Down (positive Y)
-    np.array((0, 1)),
+    # np.array((0, 1)),
     # Pointing left (negative X)
     np.array((-1, 0)),
     # Up (negative Y)
-    np.array((0, -1)),
+    # np.array((0, -1)),
 ]
 
 class WorldObj:
@@ -628,9 +628,9 @@ class MiniGridEnv(gym.Env):
     # Enumeration of possible actions
     class Actions(IntEnum):
         right = 0
-        down = 1
-        left = 2
-        up = 3
+        # down = 1
+        left = 1
+        # up = 3
         # Turn left, turn right, move forward
         # left = 0
         # right = 1
@@ -1113,7 +1113,7 @@ class MiniGridEnv(gym.Env):
         reward = self.step_reward
         done = False
 
-        if action >= 0 and action < 4:
+        if action >= 0 and action < 2:
             self.agent_dir = action
 
             # Get the position in front of the agent
@@ -1125,10 +1125,11 @@ class MiniGridEnv(gym.Env):
             if fwd_cell == None or fwd_cell.can_overlap():
                 self.agent_pos = fwd_pos
             if fwd_cell != None and fwd_cell.type == 'goal':
-                done = True
+                # done = True
                 reward = self._reward()
             if fwd_cell != None and fwd_cell.type == 'lava':
-                done = True
+                # done = True
+                pass
 
         # The following commented actions were not needed
             '''
