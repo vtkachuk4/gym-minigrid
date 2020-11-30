@@ -12,7 +12,7 @@ def plot_progress(x_axis, *argv):
                  linewidth=linewidth)
 
     plt.xlabel('Episode number')
-    plt.ylabel('Steps taken')
-    plt.subplots_adjust(bottom=0.30)
+    plt.ylabel('Statistic')
+    plt.subplots_adjust(bottom=0.20)
     plt.legend(bbox_to_anchor=(0, -0.09, 1, -0.09), loc="upper left",
                mode="expand", borderaxespad=0, ncol=2)

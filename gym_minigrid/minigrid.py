@@ -47,6 +47,7 @@ OBJECT_TO_IDX = {
     'goal'          : 8,
     'lava'          : 9,
     'agent'         : 10,
+    'goal2'         : 11,
 }
 
 IDX_TO_OBJECT = dict(zip(OBJECT_TO_IDX.values(), OBJECT_TO_IDX.keys()))
@@ -63,7 +64,7 @@ DIR_TO_VEC = [
     # Pointing right (positive X)
     np.array((1, 0)),
     # Down (positive Y)
-    # np.array((0, 1)),
+    np.array((0, 1)),
     # Pointing left (negative X)
     np.array((-1, 0)),
     # Up (negative Y)
@@ -140,6 +141,8 @@ class WorldObj:
             v = Door(color, is_open, is_locked)
         elif obj_type == 'goal':
             v = Goal()
+        elif obj_type == 'goal2':
+            v = Goal2()
         elif obj_type == 'lava':
             v = Lava()
         else:
@@ -160,6 +163,18 @@ class Goal(WorldObj):
 
     def render(self, img):
         fill_coords(img, point_in_rect(0, 1, 0, 1), COLORS[self.color])
+
+
+class Goal2(WorldObj):
+    def __init__(self):
+        super().__init__('goal2', 'blue')
+
+    def can_overlap(self):
+        return True
+
+    def render(self, img):
+        fill_coords(img, point_in_rect(0, 1, 0, 1), COLORS[self.color])
+
 
 class Floor(WorldObj):
     """
@@ -713,7 +728,7 @@ class MiniGridEnv(gym.Env):
         # Initialize the state
         self.reset()
 
-    def reset(self):
+    def reset(self, rand_pos=False):
         # Current position and direction of the agent
         self.agent_pos = None
         self.agent_dir = None
@@ -778,6 +793,7 @@ class MiniGridEnv(gym.Env):
             'ball'          : 'A',
             'box'           : 'B',
             'goal'          : 'G',
+            'goal2'         : 'C',
             'lava'          : 'V',
         }
 
@@ -787,9 +803,9 @@ class MiniGridEnv(gym.Env):
         # Map agent's direction to short string
         AGENT_DIR_TO_STR = {
             0: '>',
-            1: 'V',
+            # 1: 'V',
             2: '<',
-            3: '^'
+            # 3: '^'
         }
 
         str = ''
@@ -826,13 +842,14 @@ class MiniGridEnv(gym.Env):
     def _gen_grid(self, width, height):
         assert False, "_gen_grid needs to be implemented by each environment"
 
-    def _reward(self):
+    def _reward(self, value):
         """
         Compute the reward to be given upon success
         """
 
         # return 1 - 0.9 * (self.step_count / self.max_steps)
-        return self.final_reward
+        # return self.final_reward
+        return value
 
     def _rand_int(self, low, high):
         """
@@ -1114,7 +1131,11 @@ class MiniGridEnv(gym.Env):
         done = False
 
         if action >= 0 and action < 2:
-            self.agent_dir = action
+            # turn the agent
+            if action == 1:
+                self.agent_dir = action + 1
+            else:
+                self.agent_dir = action
 
             # Get the position in front of the agent
             fwd_pos = self.front_pos
@@ -1122,11 +1143,16 @@ class MiniGridEnv(gym.Env):
             # Get the contents of the cell in front of the agent
             fwd_cell = self.grid.get(*fwd_pos)
 
+            if self.agent_pos[0] == self.width - 2 and self.agent_pos[1] == self.height - 2:
+                reward = self._reward(1)
             if fwd_cell == None or fwd_cell.can_overlap():
                 self.agent_pos = fwd_pos
             if fwd_cell != None and fwd_cell.type == 'goal':
                 # done = True
-                reward = self._reward()
+                reward = self._reward(1)
+            if fwd_cell != None and fwd_cell.type == 'goal2':
+                # done = True
+                reward = self._reward(2)
             if fwd_cell != None and fwd_cell.type == 'lava':
                 # done = True
                 pass

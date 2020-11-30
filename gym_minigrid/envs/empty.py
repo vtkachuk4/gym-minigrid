@@ -1,5 +1,6 @@
 from gym_minigrid.minigrid import *
 from gym_minigrid.register import register
+import random
 
 class EmptyEnv(MiniGridEnv):
     """
@@ -12,16 +13,20 @@ class EmptyEnv(MiniGridEnv):
         grid_width=None,
         grid_height=None,
         agent_start_pos=(1, 1),
+        random_start_pos=False,
         agent_start_dir=0,
         step_reward=0,
         final_reward=1,
         obstacle_type=None,
-        gap_pos_list=None
+        gap_pos_list=None,
+        extra_goal=None
     ):
         self.agent_start_pos = agent_start_pos
+        self.random_start_pos = random_start_pos
         self.agent_start_dir = agent_start_dir
         self.obstacle_type = obstacle_type
         self.gap_pos_list = gap_pos_list
+        self.extra_goal = extra_goal
         if grid_height == None and grid_width == None:
             grid_height = size
             grid_width = size
@@ -45,9 +50,15 @@ class EmptyEnv(MiniGridEnv):
 
         # Place a goal square in the bottom-right corner
         self.put_obj(Goal(), width - 2, height - 2)
+        if self.extra_goal:
+            self.put_obj(Goal2(), self.extra_goal, height - 2)
 
         # Place the agent
-        if self.agent_start_pos is not None:
+        if self.random_start_pos:
+            self.agent_pos = (random.randint(1, width - 2),
+                              random.randint(1, height - 2))
+            self.agent_dir = self.agent_start_dir
+        elif self.agent_start_pos is not None:
             self.agent_pos = self.agent_start_pos
             self.agent_dir = self.agent_start_dir
         else:
@@ -92,11 +103,21 @@ class EmptyEnv16x16(EmptyEnv):
 
 class EmptyEnv1x3(EmptyEnv):
     def __init__(self, **kwargs):
-        super().__init__(grid_height=3, grid_width=5, **kwargs)
+        super().__init__(grid_height=3, grid_width=5,
+                         random_start_pos=False, agent_start_pos=(1, 1),
+                         **kwargs)
+
+class EmptyEnv1x3RSS(EmptyEnv):
+    def __init__(self, **kwargs):
+        super().__init__(grid_height=3, grid_width=5,
+                         random_start_pos=True, agent_start_pos=(1, 1),
+                         **kwargs)
 
 class EmptyEnv1x10(EmptyEnv):
     def __init__(self, **kwargs):
-        super().__init__(grid_height=3, grid_width=12, **kwargs)
+        super().__init__(grid_height=3, grid_width=12,
+                         random_start_pos=True,
+                         **kwargs)
 
 class EmptyEnv5x5R01(EmptyEnv):
     def __init__(self, **kwargs):
@@ -213,6 +234,11 @@ register(
 register(
     id='MiniGrid-Empty-1x3-v0',
     entry_point='gym_minigrid.envs:EmptyEnv1x3'
+)
+
+register(
+    id='MiniGrid-Empty-RandStartState-1x3-v0',
+    entry_point='gym_minigrid.envs:EmptyEnv1x3RSS'
 )
 
 register(
